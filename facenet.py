@@ -13,7 +13,7 @@ from keras.models import load_model
 import time
 import load
 
-PADDING = 50
+PADDING = 30
 ready_to_detect_identity = True
 windows10_voice_interface = wincl.Dispatch("SAPI.SpVoice")
 database = {}
@@ -35,7 +35,7 @@ load_weights_from_FaceNet(FRmodel)
 
 def prepare_database(n):
     database = {}
-    arr = [arr for arr in range(1, 5)]
+    arr = [arr for arr in range(1, 6)]
     if n not in arr:
         return database
     str = " "
@@ -50,6 +50,10 @@ def prepare_database(n):
 
     if n == 4:
         str = "images/Bill_Elon_Steve/*"
+
+    if n == 5:
+        str = "images/Alex_Belan/*"
+
 
     for file in glob.glob(str):
         identity = os.path.splitext(os.path.basename(file))[0]
@@ -81,25 +85,28 @@ def webcam_face_recognizer(database):
 
 def photo_face_recognizer(database):
     global ready_to_detect_identity
-    print("start")
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-
-    frame = cv2.imread(os.getcwd() + r'\testphoto\test1.jpg')
-    img = frame
+    image = cv2.imread(os.getcwd() + r'\testphoto\Steve_Jobs11.jpg')
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray,scaleFactor=1.1,minNeighbors=5)
+    faces_detected = "Лиц обнаружено: " + format(len(faces))
+    print(faces_detected)
+    img1=None
     if ready_to_detect_identity:
-        img = process_frame(img, frame, face_cascade)
+        img1 = process_frame(image, image, face_cascade)
+    '''for (x, y, w, h) in faces:
+        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 3)'''
 
-    cv2.imshow("preview", img)
+    cv2.imshow("preview", img1)
     cv2.waitKey(0)
     cv2.destroyWindow("preview")
-    print("end")
     pass
 
 def process_frame(img, frame, face_cascade):
-    print("process_frame")
     global ready_to_detect_identity
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+    print(faces)
     identities = []
     for (x, y, w, h) in faces:
         x1 = x-PADDING
@@ -109,11 +116,11 @@ def process_frame(img, frame, face_cascade):
 
         identity = find_identity(frame, x1, y1, x2, y2)
         print(identity)
-        img = cv2.rectangle(frame,(x1, y1),(x2, y2),(255,0,0),2)
+        img = cv2.rectangle(frame,(x1, y1),(x2, y2),(0, 255, 0), 3)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        img = cv2.putText(frame, identity, (x1, y2), font, 1.0, (255, 255, 255), 1)
+        img = cv2.putText(frame, identity, (x1+5, y2-5), font, 1.0, (255, 255, 0), 2)
         if identity is not None:
-            cv2.imwrite(os.getcwd() + '\photo\ '.replace(' ','') + identity + '.png', img)
+            cv2.imwrite(os.getcwd() + '\photo\ '.replace(' ','') + identity + '.jpg', img)
             identities.append(identity)
 
     if identities != []:
@@ -124,42 +131,42 @@ def process_frame(img, frame, face_cascade):
     return img
 
 def find_identity(frame, x1, y1, x2, y2):
-    print("find_identity")
     height, width, channels = frame.shape
     part_image = frame[max(0, y1):min(height, y2), max(0, x1):min(width, x2)]
     
     return who_is_it(part_image, database, FRmodel)
 
 def who_is_it(image, database, model):
-    print("who_is_it")
     encoding = img_to_encoding(image, model)
     identies = {}
     for (name, db_enc) in database.items():
         str = name[:len(name) - 2]
         if str not in identies.keys():
-            identies[str]= 0
+            identies[str]= 100
 
     min_dist = 100
     sumdist = 0
-    identity = None
     for (name, db_enc) in database.items():
         str = name[:len(name)-2]
         dist = np.linalg.norm(db_enc - encoding)
         print('distance for %s is %s' %(name, dist))
         sdist = identies.get(str)
-        identies[str] = sdist + dist
+        if dist < sdist:
+            identies[str] = dist
+        '''identies[str] = sdist + dist
         sumdist += dist
         if dist < min_dist:
             min_dist = dist
-            identity = name
+            identity = name'''
     print(identies)
     minsum = 100
-    for (name,sum) in identies.items():
-        if sum/10 < minsum and sum/10 < 0.775:
-            minsum = sum/10
+    identity = None
+
+    for (name,dist) in identies.items():
+        if dist < minsum and dist < 0.555:
+            minsum = dist
             identity = name
-        else :
-            return None
+
     '''if sumdist/10 > 0.755:
         print(sumdist / 10)
         return None
@@ -168,7 +175,7 @@ def who_is_it(image, database, model):
         print(sumdist/10)
         return str(identity)'''
     print(minsum)
-    return str(identity)
+    return identity
 
 def welcome_users(identities):
     global ready_to_detect_identity
@@ -186,10 +193,9 @@ def welcome_users(identities):
     ready_to_detect_identity = True
 
 if __name__ == "__main__":
-    n = 4
-    #database = prepare_database(n)
-    database = {}
-    n = 4
-    database = load.load(n)
+    n = 5
+    database = prepare_database(n)
+    #database = {}
+    #database = load.load(n)
     webcam_face_recognizer(database)
     #photo_face_recognizer(database)
