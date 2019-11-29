@@ -17,10 +17,8 @@ PADDING = 50
 ready_to_detect_identity = True
 windows10_voice_interface = wincl.Dispatch("SAPI.SpVoice")
 database = {}
-print("Start", (time.ctime(time.time())))
 #FRmodel = faceRecoModel(input_shape=(3, 96, 96))
-print("FRmodel", (time.ctime(time.time())))
-FRmodel = load_model(os.getcwd() + '\model\FaceRecoModel.h5')
+FRmodel = load_model(os.getcwd() + '\model\FaceRecoModel.h5',None,True)
 
 def triplet_loss(y_true, y_pred, alpha=0.3):
     anchor, positive, negative = y_pred[0], y_pred[1], y_pred[2]
@@ -31,11 +29,10 @@ def triplet_loss(y_true, y_pred, alpha=0.3):
     loss = tf.reduce_sum(tf.maximum(basic_loss, 0.0))
 
     return loss
-print("FRmodel.compile", (time.ctime(time.time())))
+
 FRmodel.compile(optimizer = 'adam', loss = triplet_loss, metrics = ['accuracy'])
-print("load_weights_from_FaceNet", (time.ctime(time.time())))
 load_weights_from_FaceNet(FRmodel)
-print("end load_weights_from_FaceNet", (time.ctime(time.time())))
+
 def prepare_database(n):
     database = {}
     arr = [arr for arr in range(1, 5)]
@@ -190,11 +187,9 @@ def welcome_users(identities):
 
 if __name__ == "__main__":
     n = 4
-    print("prepare_database", (time.ctime(time.time())))
     #database = prepare_database(n)
     database = {}
     n = 4
     database = load.load(n)
-    print("webcam_face_recognizer", (time.ctime(time.time())))
     webcam_face_recognizer(database)
     #photo_face_recognizer(database)

@@ -129,18 +129,15 @@ conv_shape = {
 
 def load_weights_from_FaceNet(FRmodel):
     weights = WEIGHTS
-    print("Start load_weights", (time.ctime(time.time())))
     #weights_dict = load_weights()
     weights_dict = {}
     with open(os.getcwd() +'\dump\weights_dict.pickle', 'rb') as f:
         weights_dict = pickle.load(f)
     #with open(os.getcwd() + '\dump\weights_dict.pickle', 'wb') as f1:
         #pickle.dump(weights_dict, f1)
-    print("End load_weights", (time.ctime(time.time())))
     for name in weights:
         if FRmodel.get_layer(name) != None:
             FRmodel.get_layer(name).set_weights(weights_dict[name])
-            print("FRmodel.get_layer(name)", (time.ctime(time.time())))
 
 def load_weights():
     dirPath = './weights'
