@@ -9,8 +9,10 @@ import win32com.client as wincl
 import os
 from keras.models import load_model
 import cv2
+import time
+import datetime
 
-PADDING = 30
+PADDING = 20
 ready_to_detect_identity = True
 windows10_voice_interface = wincl.Dispatch("SAPI.SpVoice")
 database = {}
@@ -40,16 +42,16 @@ def prepare_database(n):
         return database
     str = " "
     if n == 1:
-        str = "images/Bill_Gates/*"
+        str = "images/Bill_Gates1/*"
 
     if n == 2:
-        str = "images/Elon_Musk/*"
+        str = "images/Elon_Musk1/*"
 
     if n == 3:
-        str = "images/Steve_Jobs/*"
+        str = "images/Steve_Jobs1/*"
 
     if n == 4:
-        str = "images/Bill_Elon_Steve/*"
+        str = "images/Bill_Elon_Steve1/*"
 
     if n == 5:
         str = "images/Alex_Belan/*"
@@ -87,9 +89,9 @@ def webcam_face_recognizer(database):
 def photo_face_recognizer(database):
     global ready_to_detect_identity
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-    image = cv2.imread(os.getcwd() + r'\testphoto\Bill_Gates01.jpg')
+    image = cv2.imread(os.getcwd() + r'\testphoto\bill-steve.jpg')
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5)
     faces_detected = "Лиц обнаружено: " + format(len(faces))
     print(faces_detected)
     img1 = None
@@ -103,32 +105,11 @@ def photo_face_recognizer(database):
     cv2.destroyWindow("preview")
     pass
 
-def photo_to_database():
-    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-    image = cv2.imread(os.getcwd() + r'\images\Bill_Gates\Bill_Gates10.jpg')
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
-    faces_detected = "Лиц обнаружено: " + format(len(faces))
-    print(faces_detected)
-
-    for (x, y, w, h) in faces:
-        x1 = x - PADDING
-        y1 = y - PADDING
-        x2 = x + w + PADDING
-        y2 = y + h + PADDING
-        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 3)
-        path = os.getcwd() + r'\images\Bill_Gates1\Bill_Gates10.jpg'
-        cv2.imwrite(path, gray[y1:y2, x1:x2])
-
-    cv2.imshow("preview", image)
-    cv2.waitKey(0)
-    cv2.destroyWindow("preview")
-    pass
 
 def process_frame(img, frame, face_cascade):
     global ready_to_detect_identity
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+    faces = face_cascade.detectMultiScale(gray, 1.2, 5)
     identities = []
     for (x, y, w, h) in faces:
         x1 = x - PADDING
@@ -142,7 +123,15 @@ def process_frame(img, frame, face_cascade):
         font = cv2.FONT_HERSHEY_SIMPLEX
         img = cv2.putText(frame, identity, (x1 + 5, y2 - 5), font, 1.0, (255, 255, 0), 2)
         if identity is not None:
-            cv2.imwrite(os.getcwd() + '\photo\ '.replace(' ', '') + identity + '.jpg', img)
+
+            basename = str(identity)
+            suffix = datetime.datetime.now().strftime("%H%M%S%d%m%Y")
+            filename = "_".join([basename, suffix])
+            path = os.getcwd() + '\photo\ '.replace(' ', '')+ filename + '.jpg'
+            #path = os.getcwd() + '\photo\ '.replace(' ', '') + identity + '('+ str(time.strftime("%H:%M:%S-%d.%m.%Y")) +')'+ '.jpg'
+            #path = r'C:\Users\Alex\PycharmProjects\facenet\photo\Bill_Gates_(Mon Dec 9 12: 57:59 2019).jpg'
+            #path = os.getcwd() + '\photo\ '.replace(' ', '') + identity + '.jpg'
+            cv2.imwrite(path, img)
             identities.append(identity)
 
     if identities != []:
@@ -155,40 +144,82 @@ def process_frame(img, frame, face_cascade):
 def find_identity(frame, x1, y1, x2, y2):
     height, width, channels = frame.shape
     part_image = frame[max(0, y1):min(height, y2), max(0, x1):min(width, x2)]
-
     return who_is_it(part_image, database, FRmodel)
 
 
 def who_is_it(image, database, model):
     encoding = img_to_encoding(image, model)
-    identies = {}
+    identies1= {}
     for (name, db_enc) in database.items():
-        str = name[:len(name) - 2]
-        if str not in identies.keys():
-            identies[str] = 0.0
-
-    min_dist = 100
-    sumdist = 0
+        person = name[:len(name) - 2]
+        if person not in identies1.keys():
+            identies1[person] = []
+    mindistance = 100
     for (name, db_enc) in database.items():
-        str = name[:len(name) - 2]
+        person = name[:len(name) - 2]
         dist = np.linalg.norm(db_enc - encoding)
         print('distance for %s is %s' % (name, dist))
-        sdist = identies.get(str)
-        # if dist < sdist:
-        #     identies[str] = dist
-        identies[str] = sdist + dist
-        # sumdist += dist
-        # if dist < min_dist:
-        #     min_dist = dist
-        #     identity = name
-    print(identies)
-    minsum = 100
-    identity = None
+        identies1[person].append(dist)
+        identies1[person].sort()
 
-    for (name, dist) in identies.items():
-        if dist/10 < minsum and dist/10 < 0.755:
-            minsum = dist
+
+    print(identies1)
+    averagedis = 10
+    identity = None
+    for (name, dist) in identies1.items():
+        print(sum(dist[0:3])/3)
+        if (sum(dist[0:3])/3< averagedis) and (sum(dist[0:3])/3 <0.755):
+            averagedis = sum(dist[0:3])/3
             identity = name
+    # for (name, db_enc) in database.items():
+    #     person = name[:len(name) - 2]
+    #     if person not in identies1.keys():
+    #         identies1[person] = [100.0,0.0]
+    #
+    # for (name, db_enc) in database.items():
+    #     person = name[:len(name) - 2]
+    #     dist = np.linalg.norm(db_enc - encoding)
+    #     print('distance for %s is %s' % (name, dist))
+    #     mindist = identies1.get(person)[0]
+    #     maxdist = identies1.get(person)[1]
+    #     if dist < mindist:
+    #         identies1[person][0] = dist
+    #     if dist > maxdist:
+    #         identies1[person][1]  = dist
+    #
+    # print(identies1)
+    # averagedis = 10
+    # identity = None
+    # for (name, dist) in identies1.items():
+    #     mindist = dist[0]
+    #     maxdist = dist[1]
+    #     print((mindist+maxdist)/2)
+    #     if ((mindist+maxdist)/2 < averagedis) and ((mindist+maxdist)/2 <0.755):
+    #         averagedis = (mindist+maxdist)/2
+    #         identity = name
+
+    # min_dist = 100
+    # sumdist = 0
+    # for (name, db_enc) in database.items():
+    #     str = name[:len(name) - 2]
+    #     dist = np.linalg.norm(db_enc - encoding)
+    #     print('distance for %s is %s' % (name, dist))
+    #     sdist = identies.get(str)
+    #     # if dist < sdist:
+    #     #     identies[str] = dist
+    #     identies[str] = sdist + dist
+    #     # sumdist += dist
+    #     # if dist < min_dist:
+    #     #     min_dist = dist
+    #     #     identity = name
+    # print(identies)
+    # minsum = 100
+    # identity = None
+    #
+    # for (name, dist) in identies.items():
+    #     if dist/10 < minsum and dist/10 < 0.755:
+    #         minsum = dist
+    #         identity = name
 
     # if sumdist/10 > 0.755:
     #     print(sumdist / 10)
@@ -197,7 +228,8 @@ def who_is_it(image, database, model):
     #     #print(min_dist)
     #     print(sumdist/10)
     #     return identity
-    print(minsum)
+    #print(minsum)
+    print(averagedis)
     return identity
 
 
@@ -218,7 +250,7 @@ def welcome_users(identities):
 
 
 if __name__ == "__main__":
-    n = 1
+    n = 5
     #photo_to_database()
     database = prepare_database(n)
     # database = {}
