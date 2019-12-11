@@ -37,7 +37,7 @@ load_weights_from_FaceNet(FRmodel)
 
 def prepare_database(n):
     database = {}
-    arr = [arr for arr in range(1, 6)]
+    arr = [arr for arr in range(1, 8)]
     if n not in arr:
         return database
     str = " "
@@ -54,8 +54,11 @@ def prepare_database(n):
         str = "images/Bill_Elon_Steve1/*"
 
     if n == 5:
-        str = "images/Alex_Belan/*"
-
+        str = "images/Alex_Belan1/*"
+    if n == 6:
+        str = "images/Vitaly_Belan1/*"
+    if n == 7:
+        str = "images/Alex_Vitaly/*"
     for file in glob.glob(str):
         identity = os.path.splitext(os.path.basename(file))[0]
         database[identity] = img_path_to_encoding(file, FRmodel)
@@ -89,7 +92,7 @@ def webcam_face_recognizer(database):
 def photo_face_recognizer(database):
     global ready_to_detect_identity
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-    image = cv2.imread(os.getcwd() + r'\testphoto\bill-steve.jpg')
+    image = cv2.imread(os.getcwd() + r'\testphoto\Alex_Vitalytest11.jpg')
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5)
     faces_detected = "Лиц обнаружено: " + format(len(faces))
@@ -124,18 +127,22 @@ def process_frame(img, frame, face_cascade):
         img = cv2.putText(frame, identity, (x1 + 5, y2 - 5), font, 1.0, (255, 255, 0), 2)
         if identity is not None:
 
-            basename = str(identity)
-            suffix = datetime.datetime.now().strftime("%H%M%S%d%m%Y")
-            filename = "_".join([basename, suffix])
-            path = os.getcwd() + '\photo\ '.replace(' ', '')+ filename + '.jpg'
+
             #path = os.getcwd() + '\photo\ '.replace(' ', '') + identity + '('+ str(time.strftime("%H:%M:%S-%d.%m.%Y")) +')'+ '.jpg'
             #path = r'C:\Users\Alex\PycharmProjects\facenet\photo\Bill_Gates_(Mon Dec 9 12: 57:59 2019).jpg'
             #path = os.getcwd() + '\photo\ '.replace(' ', '') + identity + '.jpg'
-            cv2.imwrite(path, img)
+
             identities.append(identity)
 
     if identities != []:
         ready_to_detect_identity = False
+        basename = ""
+        for i in identities:
+            basename += str(i) + '_'
+        suffix = datetime.datetime.now().strftime("%H_%M_%S_%d_%m_%Y")
+        filename = "".join([basename, suffix])
+        path = os.getcwd() + '\photo\ '.replace(' ', '') + filename + '.jpg'
+        cv2.imwrite(path, img)
         pool = Pool(processes=1)
         pool.apply_async(welcome_users, [identities])
     return img
@@ -153,23 +160,23 @@ def who_is_it(image, database, model):
     for (name, db_enc) in database.items():
         person = name[:len(name) - 2]
         if person not in identies1.keys():
-            identies1[person] = []
+            identies1[person] = 100
     mindistance = 100
     for (name, db_enc) in database.items():
         person = name[:len(name) - 2]
         dist = np.linalg.norm(db_enc - encoding)
         print('distance for %s is %s' % (name, dist))
-        identies1[person].append(dist)
-        identies1[person].sort()
+        pdist = identies1.get(person)
+        if dist < pdist:
+            identies1[person] = dist
 
 
     print(identies1)
     averagedis = 10
     identity = None
     for (name, dist) in identies1.items():
-        print(sum(dist[0:3])/3)
-        if (sum(dist[0:3])/3< averagedis) and (sum(dist[0:3])/3 <0.755):
-            averagedis = sum(dist[0:3])/3
+        if (dist < averagedis) and (dist  <0.555):
+            averagedis = dist
             identity = name
     # for (name, db_enc) in database.items():
     #     person = name[:len(name) - 2]
@@ -250,10 +257,10 @@ def welcome_users(identities):
 
 
 if __name__ == "__main__":
-    n = 5
+    n = 7
     #photo_to_database()
     database = prepare_database(n)
     # database = {}
     # database = load.load(n)
-    webcam_face_recognizer(database)
-    #photo_face_recognizer(database)
+    #webcam_face_recognizer(database)
+    photo_face_recognizer(database)
