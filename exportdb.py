@@ -1,26 +1,38 @@
-import psycopg2
 import os
+
+import psycopg2
 
 exit = True
 connection = None
-n = 4
 try:
-    print("Тестирование PostgreSQL")
+    print("Загрузка данных на сервер.")
     sql = " "
+    n = int(input(
+        "Введите 1 для загрузки данных Bill_Gates, 2 - Elon_Musk, 3 - Steve_Jobs, 4 - Bill_Elon_Steve, 5 - FaceRecoModel, 6 - weights_dict: "))
     if n == 1:
-        sql = "SELECT lo_export(object,'" + os.getcwd() + "\pickle\Billdata.pickle') from datafacenet where name = 'Billdata';"
+        sql = "INSERT INTO public.datafacenet (name, object) VALUES ('Billdata', lo_import('" + os.getcwd() + '\dump\Billdata.pickle' + "'));"
 
-    if n == 2:
-        sql = "SELECT lo_export(object,'" + os.getcwd() + "\pickle\Elondata.pickle') from datafacenet where name = 'Elondata';"
+    elif n == 2:
+        sql = "INSERT INTO public.datafacenet (name, object) VALUES ('Elondata', lo_import('" + os.getcwd() + '\dump\Elondata.pickle' + "'));"
 
-    if n == 3:
-        sql = "SELECT lo_export(object,'" + os.getcwd() + "\pickle\Stevedata.pickle') from datafacenet where name = 'Stevedata';"
+    elif n == 3:
+        sql = "INSERT INTO public.datafacenet (name, object) VALUES ('Stevedata', lo_import('" + os.getcwd() + '\dump\Stevedata.pickle' + "'));"
 
-    if n == 4:
-        sql = "SELECT lo_export(object,'" + os.getcwd() + "\pickle\BillElonStevedata.pickle') from datafacenet where name = 'BillElonStevedata';"
+    elif n == 4:
+        sql = "INSERT INTO public.datafacenet (name, object) VALUES ('BillElonStevedata', lo_import('" + os.getcwd() + '\dump\BillElonStevedata.pickle' + "'));"
 
-    connection = psycopg2.connect(dbname='facenet',user='postgres', password='1234',host='127.0.0.1')
+    elif n == 5:
+        sql = "INSERT INTO public.datafacenet (name, object) VALUES ('FaceRecoModeldata', lo_import('" + os.getcwd() + '\model\FaceRecoModel.h5' + "'));"
+
+    elif n == 6:
+        sql = "INSERT INTO public.datafacenet (name, object) VALUES ('weights_dict_data', lo_import('" + os.getcwd() + '\dump\weights_dict.pickle' + "'));"
+
+    else:
+        print("Ошибка выбора варианта!")
+
+    connection = psycopg2.connect(dbname='facenet', user='postgres', password='1234', host='127.0.0.1')
     with connection.cursor() as cursor:
+
         cursor.execute(sql)
         connection.commit()
         cursor.close()
@@ -31,6 +43,6 @@ except psycopg2.OperationalError:
     exit = False
 
 finally:
-    if(exit==True):
+    if exit == True:
         connection.close()
         print("Соединение закрыто")
