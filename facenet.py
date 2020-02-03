@@ -17,7 +17,7 @@ PADDING = 20
 ready_to_detect_identity = True
 windows10_voice_interface = wincl.Dispatch("SAPI.SpVoice")
 database = {}
-#FRmodel = inception_blocks_v2.faceRecoModel(input_shape=(3, 96, 96))
+# FRmodel = inception_blocks_v2.faceRecoModel(input_shape=(3, 96, 96))
 FRmodel = load_model(os.getcwd() + '\model\FaceRecoModel.h5', None, True)
 
 
@@ -33,8 +33,8 @@ def triplet_loss(y_true, y_pred, alpha=0.3):
 
 
 FRmodel.compile(optimizer='adam', loss=triplet_loss, metrics=['accuracy'])
-#load_weights_from_FaceNet(FRmodel)
-#load_weights_from_FaceNet_dump(FRmodel)
+# load_weights_from_FaceNet(FRmodel)
+# load_weights_from_FaceNet_dump(FRmodel)
 load_weights_from_FaceNet_load_from_dump(FRmodel)
 
 
@@ -127,12 +127,12 @@ def photo_face_recognizer(database):
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5)
-        faces_detected = identity +  " лиц обнаружено: " + format(len(faces))
+        faces_detected = identity + " лиц обнаружено: " + format(len(faces))
         print(faces_detected)
         img1 = None
         if ready_to_detect_identity:
             img1 = process_frame(img, img, face_cascade)
-        #cv2.imshow('photo ' + identity, img)
+        # cv2.imshow('photo ' + identity, img)
     cv2.waitKey(0)
     cv2.destroyWindow("photo")
     pass
@@ -178,7 +178,7 @@ def find_identity(frame, x1, y1, x2, y2):
 
 def who_is_it(image, database, model):
     encoding = img_to_encoding(image, model)
-    identies1= {}
+    identies1 = {}
     for (name, db_enc) in database.items():
         person = name[:len(name) - 2]
         if person not in identies1.keys():
@@ -196,16 +196,17 @@ def who_is_it(image, database, model):
     averagedis = 10
     identity = None
     for (name, dist) in identies1.items():
-        if (dist < averagedis) and (dist  <0.555):
+        if (dist < averagedis) and (dist < 0.555):
             averagedis = dist
             identity = name
     print(averagedis)
     return identity
 
+
 if __name__ == "__main__":
-    n = 7
+    n = 4
     database = prepare_database(n)
     # database = {}
     # database = load.load(n)
-    webcam_face_recognizer(database)
-    #photo_face_recognizer(database)
+    # webcam_face_recognizer(database)
+    photo_face_recognizer(database)
